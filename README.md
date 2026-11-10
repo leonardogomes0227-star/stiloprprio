@@ -72,3 +72,5 @@ npm run build     # tsc + vite
 ## Limites conhecidos
 - O campo **custo** só aparece para a dona na tela, mas o banco entrega a coluna a qualquer usuária logada (quem abrir o console do navegador consegue ler). Se isso importar, o custo precisa ir para uma tabela separada, só da dona.
 - Não há botão para apagar peça, cliente ou sacola (as permissões já existem no banco; dá para apagar pelo Table Editor).
+
+<!-- deploy de produção: 2026-11-10T14:21Z -->
