@@ -1,5 +1,5 @@
-// Modo demonstração: banco de mentira na memória, usado quando não há .env.
-// Imita só o que o app usa do Supabase, incluindo as regras dos triggers. Recarregar a página zera tudo.
+// MODO TESTE: banco de mentira guardado no localStorage, usado quando não há .env.
+// Imita só o que o app usa do Supabase, incluindo as regras dos triggers.
 import { isoLocal } from './lib'
 
 type Row = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -11,7 +11,17 @@ const dia = (n: number) => isoLocal(new Date(Date.now() + n * 864e5))
 const brl = (v: number) => v.toFixed(2).replace('.', ',')
 
 const db: Record<string, Row[]> = { profiles: [], clientes: [], pecas: [], sacolas: [], sacola_itens: [], pagamentos: [], historico: [] }
-let eu = 'f1'
+let eu = 'd1'
+let sessao: { user: { id: string } } | null = null
+const CHAVE = 'condicional-modo-teste'
+const salva = () => { try { localStorage.setItem(CHAVE, JSON.stringify({ db, eu, sessao })) } catch { /* sem espaço: segue sem salvar */ } }
+const carrega = (): boolean => {
+  try {
+    const x = JSON.parse(localStorage.getItem(CHAVE) || 'null')
+    if (!x?.db?.profiles) return false
+    Object.assign(db, x.db); eu = x.eu; sessao = x.sessao; return true
+  } catch { return false }
+}
 const souDona = () => db.profiles.find(p => p.id === eu)?.papel === 'dona'
 const log = (sacola_id: string | null, peca_id: string | null, acao: string) =>
   db.historico.push({ id: id(), sacola_id, peca_id, acao, usuario_id: eu, criado_em: agora() })
@@ -150,6 +160,7 @@ class Consulta implements PromiseLike<{ data: unknown; error: Err | null }> {
         if (this.op === 'update') linhas.forEach(r => atualizar(this.t, r, this.payload))
         if (this.op === 'delete') linhas.forEach(r => apagar(this.t, r))
       }
+      if (this.op !== 'select') salva()
       linhas = linhas.map(r => this.t === 'sacola_itens' ? { ...r, pecas: peca(r.peca_id) }
         : this.t === 'historico' ? { ...r, pecas: r.peca_id ? peca(r.peca_id) : null } : { ...r })
       for (const [c, asc] of [...this.ordem].reverse())
@@ -162,10 +173,18 @@ class Consulta implements PromiseLike<{ data: unknown; error: Err | null }> {
 }
 
 // ---------- dados de exemplo (criados pelas mesmas regras) ----------
-function semear() {
-  db.profiles.push({ id: 'd1', nome: 'Dona Rosa', papel: 'dona', ativo: true }, { id: 'f1', nome: 'Ana', papel: 'funcionaria', ativo: true },
-    { id: 'f2', nome: 'Bia', papel: 'funcionaria', ativo: true })
+const PERFIS = [{ id: 'd1', nome: 'Dona Rosa', papel: 'dona', ativo: true }, { id: 'f1', nome: 'Ana', papel: 'funcionaria', ativo: true },
+  { id: 'f2', nome: 'Bia', papel: 'funcionaria', ativo: true }]
+
+function zera(comExemplo: boolean) {
+  for (const k of Object.keys(db)) db[k] = []
+  db.profiles.push(...PERFIS.map(p => ({ ...p })))
   eu = 'f1'
+  if (comExemplo) semear()
+  eu = 'd1'
+}
+
+function semear() {
   const cli = (nome: string, telefone: string | null, observacao: string | null = null) => inserir('clientes', { nome, telefone, observacao }).id as string
   const maria = cli('Maria Souza', '11999990000', 'Gosta de vestidos midi'), joana = cli('Joana Pereira', '11988887777'), carla = cli('Carla Lima', null)
   const mk = (n: number, d: string, tam: string, cor: string, preco: number, forn: string | null = null, custo: number | null = null) => {
@@ -187,31 +206,34 @@ function semear() {
   const b = monta(joana, [p[3], p[6]]); marca(b.itens[0], 'ficou'); atualizar('sacolas', sacola(b.s)!, { prazo: dia(-2) })
   const c = monta(carla, [p[4], p[5]]); marca(c.itens[0], 'ficou'); marca(c.itens[1], 'devolveu')
   atualizar('sacolas', sacola(c.s)!, { status: 'fechada' }); inserir('pagamentos', { sacola_id: c.s, valor: 100, forma: 'dinheiro' })
-  eu = 'f1'
 }
 
 // ---------- cliente de mentira, com a mesma cara do supabase-js ----------
 export function criaDemo() {
-  semear()
-  let sessao: { user: { id: string } } | null = null
+  if (!carrega()) zera(false)
   const ouvintes = new Set<(e: string, s: typeof sessao) => void>()
   const avisa = (e: string) => ouvintes.forEach(f => f(e, sessao))
-  const fotos = new Map<string, string>()
   return {
     from: (t: string) => new Consulta(t),
     auth: {
       getSession: async () => ({ data: { session: sessao } }),
       onAuthStateChange: (f: (e: string, s: typeof sessao) => void) => { ouvintes.add(f); return { data: { subscription: { unsubscribe: () => ouvintes.delete(f) } } } },
-      signInWithPassword: async ({ email }: { email: string }) => {
-        const e = email.trim().toLowerCase()
-        eu = e.startsWith('dona') ? 'd1' : e.startsWith('bia') ? 'f2' : 'f1'
-        sessao = { user: { id: eu } }; avisa('SIGNED_IN'); return { data: {}, error: null }
-      },
-      signOut: async () => { sessao = null; avisa('SIGNED_OUT'); return { error: null } },
+      signOut: async () => { sessao = null; salva(); avisa('SIGNED_OUT'); return { error: null } },
     },
+    // fotos viram texto (data URL) para ficarem guardadas no aparelho
     storage: { from: () => ({
-      upload: async (nome: string, blob: Blob) => { fotos.set(nome, URL.createObjectURL(blob)); return { error: null } },
-      getPublicUrl: (nome: string) => ({ data: { publicUrl: fotos.get(nome) ?? '' } }),
+      upload: async (nome: string, blob: Blob) => {
+        const url = await new Promise<string>(ok => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.readAsDataURL(blob) })
+        try { localStorage.setItem(CHAVE + ':foto:' + nome, url) } catch { /* sem espaço */ }
+        return { error: null }
+      },
+      getPublicUrl: (nome: string) => ({ data: { publicUrl: localStorage.getItem(CHAVE + ':foto:' + nome) ?? '' } }),
     }) },
+    /** Botões da tela de entrada do modo teste. */
+    entrarTeste(modo: 'exemplo' | 'vazio' | 'continuar') {
+      if (modo !== 'continuar') zera(modo === 'exemplo')
+      eu = 'd1'; sessao = { user: { id: eu } }; salva(); avisa('SIGNED_IN')
+    },
+    temDados: () => db.pecas.length + db.clientes.length + db.sacolas.length > 0,
   }
 }

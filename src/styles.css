@@ -174,3 +174,8 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 @media (max-width: 380px) { .trio b { font-size: 15px; } .cards .card b { font-size: 22px; } }
 
+
+/* modo teste */
+.faixa-teste { margin: 0; padding: 6px 16px; background: #fdf0d8; color: #6b4600; font-size: 13px; font-weight: 700; text-align: center; }
+.tela-login .faixa-teste { margin: -56px -20px 40px; }
+.cartao .link { display: block; margin: 12px auto 0; }

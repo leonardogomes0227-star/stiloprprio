@@ -4,12 +4,16 @@ Sistema para a loja controlar as sacolas de **condicional**: quais peças estão
 
 React + Vite + TypeScript, Supabase (Auth, Postgres com RLS e Storage), deploy na Vercel.
 
-## Só para testar (sem Supabase)
+## Modo teste (sem Supabase)
+O app escolhe sozinho onde guardar os dados:
+
+- **Sem** `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`: abre em **MODO TESTE**. A tela de entrada tem os botões *Entrar com dados de exemplo* e *Entrar vazio*, e uma faixa avisa "dados só neste aparelho". Tudo fica no `localStorage` do navegador (sobrevive a recarregar a página, mas não vai para outro aparelho). Entra como dona.
+- **Com** as duas variáveis preenchidas: usa o Supabase de verdade (login com e-mail e senha), sem nenhuma mudança de código.
+
 ```bash
 npm install
 npm run dev
 ```
-Sem o arquivo `.env`, o app abre em **modo demonstração**: dados de exemplo na memória do navegador, com as mesmas regras (some tudo ao recarregar). Entre com qualquer e-mail e senha; e-mail começando com `dona` entra como dona.
 
 ## Como colocar no ar
 

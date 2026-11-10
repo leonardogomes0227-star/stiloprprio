@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { modoTeste, supabase } from './supabase'
 import { AppCtx, type Ctx } from './app'
 import { msgErro, q } from './lib'
 import type { Profile } from './types'
@@ -82,6 +82,7 @@ function Logado({ userId }: { userId: string }) {
   return (
     <AppCtx.Provider value={ctx}>
       <div className="app">
+        {modoTeste && <p className="faixa-teste" role="note">MODO TESTE: dados só neste aparelho</p>}
         <header className="topo">
           <span className="marca">Condicional</span>
           <span className="quem">{ctx.me.nome}{ctx.me.papel === 'dona' ? ' · dona' : ''}</span>
