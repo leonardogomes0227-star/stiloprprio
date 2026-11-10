@@ -4,6 +4,13 @@ Sistema para a loja controlar as sacolas de **condicional**: quais peças estão
 
 React + Vite + TypeScript, Supabase (Auth, Postgres com RLS e Storage), deploy na Vercel.
 
+## Só para testar (sem Supabase)
+```bash
+npm install
+npm run dev
+```
+Sem o arquivo `.env`, o app abre em **modo demonstração**: dados de exemplo na memória do navegador, com as mesmas regras (some tudo ao recarregar). Entre com qualquer e-mail e senha; e-mail começando com `dona` entra como dona.
+
 ## Como colocar no ar
 
 ### 1. Criar o projeto no Supabase

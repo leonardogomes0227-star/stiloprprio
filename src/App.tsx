@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { configurado, supabase } from './supabase'
+import { demo, supabase } from './supabase'
 import { AppCtx, type Ctx } from './app'
 import { msgErro, q } from './lib'
 import type { Profile } from './types'
@@ -20,22 +20,7 @@ const ABAS: { id: Aba; nome: string; icone: string }[] = [
 ]
 
 export default function App() {
-  if (!configurado) return <SemConfig />
   return <ComSessao />
-}
-
-function SemConfig() {
-  return (
-    <main className="tela-login">
-      <h1>Condicional</h1>
-      <div className="cartao aviso-config" role="alert">
-        <h2>Falta configurar</h2>
-        <p>O app ainda não está ligado ao Supabase. Crie o arquivo <code>.env</code> (ou as variáveis na Vercel) com:</p>
-        <pre>VITE_SUPABASE_URL=…{'\n'}VITE_SUPABASE_ANON_KEY=…</pre>
-        <p>Os passos estão no README.</p>
-      </div>
-    </main>
-  )
 }
 
 function ComSessao() {
@@ -97,6 +82,7 @@ function Logado({ userId }: { userId: string }) {
   return (
     <AppCtx.Provider value={ctx}>
       <div className="app">
+        {demo && <p className="demo-faixa" role="note">Modo demonstração: os dados são de mentira e somem ao recarregar.</p>}
         <header className="topo">
           <span className="marca">Condicional</span>
           <span className="quem">{ctx.me.nome}{ctx.me.papel === 'dona' ? ' · dona' : ''}</span>
